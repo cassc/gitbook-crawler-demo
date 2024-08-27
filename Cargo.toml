@@ -1,0 +1,11 @@
+[package]
+name = "gitbook-downloader"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.16", features = ["derive"] }
+eyre = "0.6.12"
+playwright = "0.0.20"
+tokio = { version = "1.39.3", features = ["full"] }
+tokio-stream = { version = "0.1.15", features = ["full"] }
