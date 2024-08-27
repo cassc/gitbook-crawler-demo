@@ -9,7 +9,6 @@ use tokio::fs;
 #[command(about = "A simple gitbook crawler using Playwright in Rust", long_about = None)]
 struct Cli {
     /// The root URL to start crawling from
-    #[arg(short, long)]
     url: String,
 
     /// Path to the browser executable file (default: None)
@@ -21,10 +20,11 @@ struct Cli {
     output_dir: Option<PathBuf>,
 
     /// Headless mode (default: true)
-    #[arg(short, long, default_value_t = true)]
+    #[arg(long, default_value_t = true)]
     headless: bool,
 
     /// Ignore external link (default: true)
+    #[arg(long, default_value_t = true)]
     ignore_external_links: bool,
 }
 
