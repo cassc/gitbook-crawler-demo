@@ -3,6 +3,7 @@ use eyre::{ContextCompat, Result};
 use playwright::api::Playwright;
 use std::path::PathBuf;
 use tokio::fs;
+use url::Url;
 
 #[derive(Parser, Debug)]
 #[command(name = "gitbook-crawler")]
@@ -36,6 +37,15 @@ struct PageContent {
     pub children: Vec<PageContent>,
 }
 
+fn get_base_url(url_str: &str) -> Option<String> {
+    if let Ok(url) = Url::parse(url_str) {
+        let base_url = format!("{}://{}", url.scheme(), url.host_str()?);
+        Some(base_url)
+    } else {
+        None
+    }
+}
+
 async fn run_crawler(args: Cli) -> Result<()> {
     // Initialize Playwright and start a Chromium browser
     let playwright = Playwright::initialize().await?;
@@ -61,12 +71,7 @@ async fn run_crawler(args: Cli) -> Result<()> {
 
     let mut pages = vec![];
 
-    let content = page
-        .query_selector("main")
-        .await?
-        .context("No main element found")?
-        .inner_html()
-        .await?;
+    let content = page.content().await?;
 
     let title_page = PageContent {
         title,
@@ -100,6 +105,7 @@ async fn run_crawler(args: Cli) -> Result<()> {
     }
 
     if let Some(output_dir) = args.output_dir {
+        let base_url = get_base_url(&args.url).context("Invalid URL")?;
         for page_content in pages.iter_mut() {
             if &page_content.link == "/" {
                 page_content.link = "index".to_string();
@@ -125,16 +131,12 @@ async fn run_crawler(args: Cli) -> Result<()> {
                     panic!("External links are not supported")
                 }
             } else {
-                format!("{}/{}", args.url, link)
+                format!("{}/{}", base_url, link)
             };
 
+            println!("Navigating to: {}", link);
             page.goto_builder(&link).goto().await?;
-            let content = page
-                .query_selector("main")
-                .await?
-                .context("No main element found")?
-                .inner_html()
-                .await?;
+            let content = page.content().await?;
             page_content.content = Some(content.clone());
 
             if let Some(parent) = output_path.parent() {
